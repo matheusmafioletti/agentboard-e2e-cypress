@@ -1,0 +1,7 @@
+node_modules/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/*
+!cypress/downloads/.gitkeep
+.env
+dist/

@@ -1,0 +1,12 @@
+{
+  "story": {
+    "title": "User can login",
+    "type": "STORY",
+    "status": "TODO"
+  },
+  "task": {
+    "title": "Implement login endpoint",
+    "type": "TASK",
+    "status": "TODO"
+  }
+}

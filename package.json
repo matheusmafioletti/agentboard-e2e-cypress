@@ -1,0 +1,24 @@
+{
+  "name": "agentboard-e2e-cypress",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress E2E and Component tests for AgentBoard",
+  "scripts": {
+    "test": "cypress run",
+    "test:open": "cypress open",
+    "test:e2e": "cypress run --e2e",
+    "test:component": "cypress run --component",
+    "lint": "eslint cypress --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@testing-library/cypress": "^10.0.0",
+    "@types/node": "^25.9.2",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "cypress": "^13.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-cypress": "^2.15.0",
+    "typescript": "^5.4.0"
+  }
+}
