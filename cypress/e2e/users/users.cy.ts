@@ -37,9 +37,8 @@ describe('Users Management [TC-USERS-001..006]', () => {
       cy.registerViaApi(userEmail, 'Abc12345!', generateWorkspaceName()).then((newUser) => {
         cy.request({
           method: 'POST',
-          url: `${Cypress.env('authApiUrl')}/invite/accept`,
-          headers: { Authorization: `Bearer ${newUser.token}` },
-          body: { token: invite.inviteToken },
+          url: `${Cypress.env('authApiUrl')}/auth/invites/${invite.inviteToken}/accept`,
+          body: { email: userEmail, password: 'Abc12345!' },
           failOnStatusCode: false,
         });
 

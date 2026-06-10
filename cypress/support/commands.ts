@@ -118,7 +118,7 @@ Cypress.Commands.add('createProjectViaApi', (token: string, tenantId: string, na
   return cy
     .request({
       method: 'POST',
-      url: `${Cypress.env('boardApiUrl')}/projects`,
+      url: `${Cypress.env('boardApiUrl')}/api/v1/projects`,
       headers: {
         Authorization: `Bearer ${token}`,
         'X-Tenant-Id': tenantId,
@@ -141,7 +141,7 @@ Cypress.Commands.add(
     return cy
       .request({
         method: 'POST',
-        url: `${Cypress.env('boardApiUrl')}/projects/${projectId}/work-items`,
+        url: `${Cypress.env('boardApiUrl')}/api/v1/work-items?projectId=${projectId}`,
         headers: {
           Authorization: `Bearer ${token}`,
           'X-Tenant-Id': tenantId,

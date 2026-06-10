@@ -40,9 +40,10 @@ jobs:
           browser: chrome
           spec: ${{ github.event.inputs.spec || 'cypress/e2e/**' }}
         env:
-          BASE_URL: ${{ vars.STAGING_URL || 'http://localhost:5173' }}
-          AUTH_API_URL: ${{ vars.AUTH_API_URL || 'http://localhost:8080' }}
-          BOARD_API_URL: ${{ vars.BOARD_API_URL || 'http://localhost:8081' }}
+          ENVIRONMENT: staging
+          BASE_URL: ${{ vars.BASE_URL || 'https://agentboard.matheusmafioletti.com' }}
+          AUTH_API_URL: ${{ vars.AUTH_API_URL || 'https://agentboard.matheusmafioletti.com' }}
+          BOARD_API_URL: ${{ vars.BOARD_API_URL || 'https://agentboard.matheusmafioletti.com' }}
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
 
       - name: Upload screenshots

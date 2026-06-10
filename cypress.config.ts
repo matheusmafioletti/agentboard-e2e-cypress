@@ -1,8 +1,11 @@
 import { defineConfig } from 'cypress';
+import { resolveEnvironment } from './cypress/support/environment';
+
+const env = resolveEnvironment();
 
 export default defineConfig({
   e2e: {
-    baseUrl: process.env.BASE_URL ?? 'http://localhost:5173',
+    baseUrl: env.baseUrl,
     specPattern: 'cypress/e2e/**/*.cy.ts',
     supportFile: 'cypress/support/e2e.ts',
     viewportWidth: 1280,
@@ -11,8 +14,9 @@ export default defineConfig({
     screenshotOnRunFailure: true,
     retries: { runMode: 2, openMode: 0 },
     env: {
-      authApiUrl: process.env.AUTH_API_URL ?? 'http://localhost:8080',
-      boardApiUrl: process.env.BOARD_API_URL ?? 'http://localhost:8081',
+      environment: env.environment,
+      authApiUrl: env.authApiUrl,
+      boardApiUrl: env.boardApiUrl,
     },
     setupNodeEvents(on, config) {
       on('task', {
