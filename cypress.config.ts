@@ -1,5 +1,8 @@
 import { defineConfig } from 'cypress';
+import * as dotenv from 'dotenv';
 import { resolveEnvironment } from './cypress/support/environment';
+
+dotenv.config();
 
 const env = resolveEnvironment();
 

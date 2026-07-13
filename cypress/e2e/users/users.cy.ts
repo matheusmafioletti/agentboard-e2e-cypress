@@ -1,61 +1,51 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Users Management [TC-USERS-001..006]', () => {
-  let adminToken = '';
+const PASSWORD = 'Abc12345!';
+
+describe('Users Management', () => {
+  let adminJwt = '';
   let adminTenantId = '';
   let adminEmail = '';
-  let wsName = '';
+  let tenantName = '';
 
   beforeEach(() => {
     adminEmail = generateEmail('admin');
-    wsName = generateWorkspaceName();
+    tenantName = generateTenantName();
 
-    cy.registerViaApi(adminEmail, 'Abc12345!', wsName).then((user) => {
-      adminToken = user.token;
+    testData.createAuthenticatedUser(adminEmail, PASSWORD, tenantName).then((user) => {
+      adminJwt = user.jwt;
       adminTenantId = user.tenantId;
-      cy.setAuth(user.token, {
+      setAuthInLocalStorage(user.jwt, {
         userId: user.userId,
         email: adminEmail,
         tenantId: user.tenantId,
-        tenantName: wsName,
+        tenantName,
         role: 'ADMIN',
       });
     });
   });
 
-  it('TC-USERS-001: ADMIN accesses /usuarios and sees members list with email and role', () => {
+  it('ADMIN accesses /usuarios and sees members list with email and role', () => {
     cy.visit('/usuarios');
     cy.url().should('include', '/usuarios');
     cy.findByText(adminEmail).should('be.visible');
     cy.findByText(/ADMIN/i).should('be.visible');
   });
 
-  it('TC-USERS-002: USER role cannot access /usuarios and sidebar hides the "Usuários" link', () => {
+  it('USER role cannot access /usuarios and sidebar hides the "Usuários" link', () => {
     const userEmail = generateEmail('member');
 
-    cy.createInviteViaApi(adminToken, adminTenantId, userEmail).then((invite) => {
-      cy.registerViaApi(userEmail, 'Abc12345!', generateWorkspaceName()).then((newUser) => {
-        cy.request({
-          method: 'POST',
-          url: `${Cypress.env('authApiUrl')}/auth/invites/${invite.inviteToken}/accept`,
-          body: { email: userEmail, password: 'Abc12345!' },
-          failOnStatusCode: false,
-        });
-
-        cy.request(
-          'POST',
-          `${Cypress.env('authApiUrl')}/auth/select-tenant`,
-          {
-            email: userEmail,
-            password: 'Abc12345!',
-            tenantId: adminTenantId,
-          },
-        ).then(({ body }) => {
-          cy.setAuth(body.token, {
+    testData.createInvite(adminJwt, adminTenantId, userEmail).then((invite) => {
+      testData.createAuthenticatedUser(userEmail, PASSWORD, generateTenantName()).then((newUser) => {
+        testData.acceptInvite(invite.token, userEmail, PASSWORD);
+        testData.selectTenant(userEmail, PASSWORD, adminTenantId).then((session) => {
+          setAuthInLocalStorage(session.token, {
             userId: newUser.userId,
             email: userEmail,
             tenantId: adminTenantId,
-            tenantName: wsName,
+            tenantName,
             role: 'USER',
           });
         });
@@ -69,7 +59,7 @@ describe('Users Management [TC-USERS-001..006]', () => {
     cy.url().should('not.include', '/usuarios');
   });
 
-  it('TC-USERS-003: ADMIN creates an invite and email appears in pending invites list', () => {
+  it('ADMIN creates an invite and email appears in pending invites list', () => {
     const inviteEmail = generateEmail('invited');
 
     cy.visit('/usuarios');
@@ -81,10 +71,10 @@ describe('Users Management [TC-USERS-001..006]', () => {
     cy.findByText(/pendente|pending/i).should('be.visible');
   });
 
-  it('TC-USERS-004: ADMIN cancels an invite and email is removed from pending list', () => {
+  it('ADMIN cancels an invite and email is removed from pending list', () => {
     const inviteEmail = generateEmail('cancel-invite');
 
-    cy.createInviteViaApi(adminToken, adminTenantId, inviteEmail).then((invite) => {
+    testData.createInvite(adminJwt, adminTenantId, inviteEmail).then((invite) => {
       cy.visit('/usuarios');
       cy.findByText(inviteEmail).should('be.visible');
 
@@ -97,31 +87,26 @@ describe('Users Management [TC-USERS-001..006]', () => {
 
       cy.findByText(inviteEmail).should('not.exist');
 
-      cy.request({
-        method: 'DELETE',
-        url: `${Cypress.env('authApiUrl')}/auth/tenants/${adminTenantId}/invites/${invite.inviteId}`,
-        headers: { Authorization: `Bearer ${adminToken}` },
-        failOnStatusCode: false,
-      });
+      testData.cancelInvite(adminJwt, adminTenantId, invite.inviteId);
     });
   });
 
-  it('TC-USERS-005: new user accepts invite, is authenticated in the invite workspace with role USER', () => {
+  it('new user accepts invite, is authenticated in the invite workspace with role USER', () => {
     const newUserEmail = generateEmail('accept-invite');
 
-    cy.createInviteViaApi(adminToken, adminTenantId, newUserEmail).then((invite) => {
-      cy.registerViaApi(newUserEmail, 'Abc12345!', generateWorkspaceName()).then(() => {
-        cy.visit(`/invite/${invite.inviteToken}`);
+    testData.createInvite(adminJwt, adminTenantId, newUserEmail).then((invite) => {
+      testData.createAuthenticatedUser(newUserEmail, PASSWORD, generateTenantName()).then(() => {
+        cy.visit(`/invite/${invite.token}`);
         cy.findByRole('button', { name: /aceitar|accept|join/i }).click();
 
         cy.url().should('include', '/inicio');
-        cy.findByText(wsName).should('be.visible');
+        cy.findByText(tenantName).should('be.visible');
         cy.get('[data-testid="user-role"]').should('contain.text', 'USER');
       });
     });
   });
 
-  it('TC-USERS-006: invalid invite token shows error and hides acceptance form', () => {
+  it('invalid invite token shows error and hides acceptance form', () => {
     cy.visit('/invite/token-invalido-000');
     cy.findByRole('alert').should('be.visible');
     cy.findByRole('button', { name: /aceitar|accept|join/i }).should('not.exist');

@@ -1,32 +1,35 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Authentication — Register [TC-AUTH-001..002]', () => {
-  it('TC-AUTH-001: successful registration redirects to /inicio and shows workspace name in sidebar', () => {
+const PASSWORD = 'Abc12345!';
+
+describe('Authentication — Register', () => {
+  it('successful registration redirects to /inicio and shows workspace name in sidebar', () => {
     const email = generateEmail('register');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
 
     cy.visit('/register');
     cy.findByLabelText(/nome|name/i).type('Test User');
     cy.findByLabelText(/email/i).type(email);
-    cy.findByLabelText(/senha|password/i).type('Abc12345!');
-    cy.findByLabelText(/workspace|tenant|organização/i).type(wsName);
+    cy.findByLabelText(/senha|password/i).type(PASSWORD);
+    cy.findByLabelText(/workspace|tenant|organização/i).type(tenantName);
     cy.findByRole('button', { name: /registrar|register|criar conta/i }).click();
 
     cy.url().should('include', '/inicio');
-    cy.findByText(wsName).should('be.visible');
+    cy.findByText(tenantName).should('be.visible');
   });
 
-  it('TC-AUTH-002: duplicate email shows error and user stays on /register', () => {
+  it('duplicate email shows error and user stays on /register', () => {
     const email = generateEmail('dup');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName);
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName);
 
     cy.visit('/register');
     cy.findByLabelText(/nome|name/i).type('Another User');
     cy.findByLabelText(/email/i).type(email);
-    cy.findByLabelText(/senha|password/i).type('Abc12345!');
-    cy.findByLabelText(/workspace|tenant|organização/i).type(generateWorkspaceName());
+    cy.findByLabelText(/senha|password/i).type(PASSWORD);
+    cy.findByLabelText(/workspace|tenant|organização/i).type(generateTenantName());
     cy.findByRole('button', { name: /registrar|register|criar conta/i }).click();
 
     cy.findByRole('alert').should('be.visible');

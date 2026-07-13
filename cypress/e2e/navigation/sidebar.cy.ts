@@ -1,16 +1,20 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Navigation — Sidebar [TC-NAV-001..003]', () => {
-  it('TC-NAV-001: ADMIN sidebar contains "Usuários" link', () => {
+const PASSWORD = 'Abc12345!';
+
+describe('Navigation — Sidebar', () => {
+  it('ADMIN sidebar contains "Usuários" link', () => {
     const email = generateEmail('nav-admin');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName).then((user) => {
-      cy.setAuth(user.token, {
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName).then((user) => {
+      setAuthInLocalStorage(user.jwt, {
         userId: user.userId,
         email,
         tenantId: user.tenantId,
-        tenantName: wsName,
+        tenantName,
         role: 'ADMIN',
       });
     });
@@ -19,39 +23,27 @@ describe('Navigation — Sidebar [TC-NAV-001..003]', () => {
     cy.get('nav').findByRole('link', { name: /usuários|users/i }).should('be.visible');
   });
 
-  it('TC-NAV-002: USER role sidebar does NOT contain "Usuários" link', () => {
+  it('USER role sidebar does NOT contain "Usuários" link', () => {
     const adminEmail = generateEmail('nav-admin2');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
     const userEmail = generateEmail('nav-user');
 
-    cy.registerViaApi(adminEmail, 'Abc12345!', wsName).then((admin) => {
-      cy.createInviteViaApi(admin.token, admin.tenantId, userEmail).then((invite) => {
-        cy.registerViaApi(userEmail, 'Abc12345!', generateWorkspaceName()).then((newUser) => {
-          cy.request({
-            method: 'POST',
-            url: `${Cypress.env('authApiUrl')}/auth/invites/${invite.inviteToken}/accept`,
-            body: { email: userEmail, password: 'Abc12345!' },
-            failOnStatusCode: false,
-          });
-
-          cy.request(
-            'POST',
-            `${Cypress.env('authApiUrl')}/auth/select-tenant`,
-            {
-              email: userEmail,
-              password: 'Abc12345!',
-              tenantId: admin.tenantId,
-            },
-          ).then(({ body }) => {
-            cy.setAuth(body.token, {
-              userId: newUser.userId,
-              email: userEmail,
-              tenantId: admin.tenantId,
-              tenantName: wsName,
-              role: 'USER',
+    testData.createAuthenticatedUser(adminEmail, PASSWORD, tenantName).then((admin) => {
+      testData.createInvite(admin.jwt, admin.tenantId, userEmail).then((invite) => {
+        testData
+          .createAuthenticatedUser(userEmail, PASSWORD, generateTenantName())
+          .then((newUser) => {
+            testData.acceptInvite(invite.token, userEmail, PASSWORD);
+            testData.selectTenant(userEmail, PASSWORD, admin.tenantId).then((session) => {
+              setAuthInLocalStorage(session.token, {
+                userId: newUser.userId,
+                email: userEmail,
+                tenantId: admin.tenantId,
+                tenantName,
+                role: 'USER',
+              });
             });
           });
-        });
       });
     });
 
@@ -59,23 +51,23 @@ describe('Navigation — Sidebar [TC-NAV-001..003]', () => {
     cy.get('nav').findByText(/usuários|users/i).should('not.exist');
   });
 
-  it('TC-NAV-003: /inicio with at least one project shows summary cards with counts', () => {
+  it('/inicio with at least one project shows summary cards with counts', () => {
     const email = generateEmail('nav-inicio');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName).then((user) => {
-      cy.setAuth(user.token, {
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName).then((user) => {
+      setAuthInLocalStorage(user.jwt, {
         userId: user.userId,
         email,
         tenantId: user.tenantId,
-        tenantName: wsName,
+        tenantName,
         role: 'ADMIN',
       });
 
-      cy.createProjectViaApi(user.token, user.tenantId, 'Inicio Project').then((proj) => {
-        cy.createWorkItemViaApi(user.token, user.tenantId, proj.id, 'Feature 1', 'FEATURE');
-        cy.createWorkItemViaApi(user.token, user.tenantId, proj.id, 'Story 1', 'USER_STORY');
-        cy.createWorkItemViaApi(user.token, user.tenantId, proj.id, 'Task 1', 'TASK');
+      testData.createProject(user.jwt, user.tenantId, 'Inicio Project').then((proj) => {
+        testData.createWorkItem(user.jwt, user.tenantId, proj.id, 'Feature 1', 'FEATURE');
+        testData.createWorkItem(user.jwt, user.tenantId, proj.id, 'Story 1', 'USER_STORY');
+        testData.createWorkItem(user.jwt, user.tenantId, proj.id, 'Task 1', 'TASK');
       });
     });
 

@@ -1,28 +1,32 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Authentication — Session [TC-AUTH-008]', () => {
-  it('TC-AUTH-008: switching workspace via sidebar updates the active workspace name', () => {
+const PASSWORD = 'Abc12345!';
+
+describe('Authentication — Session', () => {
+  it('switching workspace via sidebar updates the active workspace name', () => {
     const email = generateEmail('switch');
-    const wsName1 = generateWorkspaceName();
-    const wsName2 = generateWorkspaceName();
+    const tenantName1 = generateTenantName();
+    const tenantName2 = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName1).then((user) => {
-      cy.createTenantViaApi(user.token, wsName2).then(() => {
-        cy.setAuth(user.token, {
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName1).then((user) => {
+      testData.createSecondTenant(user.jwt, tenantName2).then(() => {
+        setAuthInLocalStorage(user.jwt, {
           userId: user.userId,
           email,
           tenantId: user.tenantId,
-          tenantName: wsName1,
+          tenantName: tenantName1,
           role: 'ADMIN',
         });
       });
     });
 
     cy.visit('/inicio');
-    cy.findByText(wsName1).should('be.visible');
+    cy.findByText(tenantName1).should('be.visible');
 
     cy.findByRole('button', { name: /trocar workspace|switch|workspaces|tenants/i }).click();
-    cy.findByText(wsName2).should('be.visible').click();
-    cy.findByText(wsName2).should('be.visible');
+    cy.findByText(tenantName2).should('be.visible').click();
+    cy.findByText(tenantName2).should('be.visible');
   });
 });

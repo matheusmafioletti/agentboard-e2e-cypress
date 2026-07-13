@@ -1,29 +1,33 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Projects [TC-PROJ-001..003]', () => {
-  let userToken = '';
+const PASSWORD = 'Abc12345!';
+
+describe('Projects', () => {
+  let userJwt = '';
   let userTenantId = '';
   let userEmail = '';
-  let wsName = '';
+  let tenantName = '';
 
   beforeEach(() => {
     userEmail = generateEmail('proj');
-    wsName = generateWorkspaceName();
+    tenantName = generateTenantName();
 
-    cy.registerViaApi(userEmail, 'Abc12345!', wsName).then((user) => {
-      userToken = user.token;
+    testData.createAuthenticatedUser(userEmail, PASSWORD, tenantName).then((user) => {
+      userJwt = user.jwt;
       userTenantId = user.tenantId;
-      cy.setAuth(user.token, {
+      setAuthInLocalStorage(user.jwt, {
         userId: user.userId,
         email: userEmail,
         tenantId: user.tenantId,
-        tenantName: wsName,
+        tenantName,
         role: 'ADMIN',
       });
     });
   });
 
-  it('TC-PROJ-001: creating a project via UI makes it appear in the projects list', () => {
+  it('creating a project via UI makes it appear in the projects list', () => {
     cy.visit('/projetos');
     cy.findByRole('button', { name: /novo projeto|criar projeto|new project/i }).click();
     const projectName = `Proj-${Date.now()}`;
@@ -32,8 +36,8 @@ describe('Projects [TC-PROJ-001..003]', () => {
     cy.findByText(projectName).should('be.visible');
   });
 
-  it('TC-PROJ-002: clicking a project card navigates to /projetos/:id', () => {
-    cy.createProjectViaApi(userToken, userTenantId, 'Click Target Project').then((proj) => {
+  it('clicking a project card navigates to /projetos/:id', () => {
+    testData.createProject(userJwt, userTenantId, 'Click Target Project').then((proj) => {
       cy.visit('/projetos');
       cy.findByText('Click Target Project').click();
       cy.url().should('match', /\/projetos\/[^/]+$/);
@@ -41,8 +45,8 @@ describe('Projects [TC-PROJ-001..003]', () => {
     });
   });
 
-  it('TC-PROJ-003: selecting a project via ProjectSelector updates the board context', () => {
-    cy.createProjectViaApi(userToken, userTenantId, 'Selector Project').then(() => {
+  it('selecting a project via ProjectSelector updates the board context', () => {
+    testData.createProject(userJwt, userTenantId, 'Selector Project').then(() => {
       cy.visit('/board');
       cy.findByRole('combobox', { name: /projeto|project/i })
         .should('be.visible')

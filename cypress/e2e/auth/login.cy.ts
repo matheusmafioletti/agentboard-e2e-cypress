@@ -1,35 +1,39 @@
-import { generateEmail, generateWorkspaceName } from '../../support/test-utils';
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
 
-describe('Authentication — Login [TC-AUTH-003..007]', () => {
-  it('TC-AUTH-003: single-tenant login redirects directly to /inicio', () => {
+const PASSWORD = 'Abc12345!';
+
+describe('Authentication — Login', () => {
+  it('single-tenant login redirects directly to /inicio', () => {
     const email = generateEmail('login-single');
-    cy.registerViaApi(email, 'Abc12345!', generateWorkspaceName());
+    testData.createAuthenticatedUser(email, PASSWORD, generateTenantName());
     cy.visit('/login');
     cy.findByLabelText(/email/i).type(email);
-    cy.findByLabelText(/senha|password/i).type('Abc12345!');
+    cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByRole('button', { name: /entrar|login/i }).click();
     cy.url().should('include', '/inicio');
   });
 
-  it('TC-AUTH-004: multi-tenant login shows TenantPicker before redirecting', () => {
+  it('multi-tenant login shows TenantPicker before redirecting', () => {
     const email = generateEmail('login-multi');
-    const wsName = generateWorkspaceName();
-    const wsName2 = generateWorkspaceName();
+    const tenantName = generateTenantName();
+    const tenantName2 = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName).then((user) => {
-      cy.createTenantViaApi(user.token, wsName2);
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName).then((user) => {
+      testData.createSecondTenant(user.jwt, tenantName2);
     });
 
     cy.visit('/login');
     cy.findByLabelText(/email/i).type(email);
-    cy.findByLabelText(/senha|password/i).type('Abc12345!');
+    cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByRole('button', { name: /entrar|login/i }).click();
 
-    cy.findByText(wsName).should('be.visible').click();
+    cy.findByText(tenantName).should('be.visible').click();
     cy.url().should('include', '/inicio');
   });
 
-  it('TC-AUTH-005: invalid credentials show generic error message', () => {
+  it('invalid credentials show generic error message', () => {
     cy.visit('/login');
     cy.findByLabelText(/email/i).type('naoexiste@agentboard.test');
     cy.findByLabelText(/senha|password/i).type('WrongPass999!');
@@ -38,21 +42,21 @@ describe('Authentication — Login [TC-AUTH-003..007]', () => {
     cy.url().should('include', '/login');
   });
 
-  it('TC-AUTH-006: unauthenticated access to /board redirects to /login', () => {
+  it('unauthenticated access to /board redirects to /login', () => {
     cy.visit('/board');
     cy.url().should('include', '/login');
   });
 
-  it('TC-AUTH-007: logout redirects to /login and blocks subsequent /inicio access', () => {
+  it('logout redirects to /login and blocks subsequent /inicio access', () => {
     const email = generateEmail('logout');
-    const wsName = generateWorkspaceName();
+    const tenantName = generateTenantName();
 
-    cy.registerViaApi(email, 'Abc12345!', wsName).then((user) => {
-      cy.setAuth(user.token, {
+    testData.createAuthenticatedUser(email, PASSWORD, tenantName).then((user) => {
+      setAuthInLocalStorage(user.jwt, {
         userId: user.userId,
         email,
         tenantId: user.tenantId,
-        tenantName: wsName,
+        tenantName,
         role: 'ADMIN',
       });
     });

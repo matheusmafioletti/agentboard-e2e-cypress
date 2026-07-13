@@ -89,18 +89,20 @@ beforeEach(() => {
 
 Session is keyed by `[email, password]` — changing credentials busts the cache automatically.
 
-### `cy.loginViaApi()` — bypass UI for setup
+### API setup via `testData` service
 
-When a test needs to be authenticated but the login flow itself is not under test, use
-`cy.loginViaApi()` to set the auth token directly via the REST API. This is faster and avoids
-coupling test setup to UI implementation details.
+When a test needs authenticated state or seed data but the setup flow itself is not under test,
+use the `testData` singleton from `cypress/api/services/TestDataService.ts`. This bypasses UI
+forms for fast, deterministic `beforeEach` hooks.
 
 ```typescript
-it('loads the board for an authenticated user', () => {
-  cy.loginViaApi('alice@test.com', 'secret123');
-  cy.visit('/board');
-  cy.url().should('include', '/board');
-});
+import { testData } from '../../api/services/TestDataService';
+import { setAuthInLocalStorage } from '../../support/browser';
+import { generateEmail, generateTenantName } from '../../support/generators';
+
+const user = testData.createAuthenticatedUser(email, password, generateTenantName());
+testData.createProject(user.jwt, user.tenantId, 'My Project');
+setAuthInLocalStorage(user.jwt, { userId: user.userId, email, tenantId: user.tenantId, tenantName, role: user.role });
 ```
 
 ### Semantic queries with `@testing-library/cypress`
@@ -135,25 +137,64 @@ cy.get('.work-item').first().should('be.visible');
 
 ---
 
+## Architecture
+
+### API Clients & Test Data Service (`cypress/api/`)
+
+HTTP calls are organized into service-specific clients that read base URLs from `support/environment.ts`:
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| `BaseApiClient` | `api/clients/BaseApiClient.ts` | Shared `cy.request`, JSON headers, error handling |
+| `AuthApiClient` | `api/clients/AuthApiClient.ts` | Register, login, tenants, invites |
+| `BoardApiClient` | `api/clients/BoardApiClient.ts` | Projects, work-items |
+| `TestDataService` | `api/services/TestDataService.ts` | High-level test setup workflows |
+
+Domain types live in `api/types/` (`auth.types.ts`, `board.types.ts`). Generators and browser
+helpers remain in `support/generators.ts` and `support/browser.ts`.
+
+Custom commands in `support/commands.ts` are limited to UI interactions (`cy.login`, `cy.createWorkItem`).
+All API setup goes through `testData` imports in spec files.
+
+---
+
 ## Project structure
 
 ```
 cypress/
+├── api/
+│   ├── clients/
+│   │   ├── BaseApiClient.ts
+│   │   ├── AuthApiClient.ts
+│   │   └── BoardApiClient.ts
+│   ├── services/
+│   │   └── TestDataService.ts
+│   └── types/
+│       ├── auth.types.ts
+│       └── board.types.ts
 ├── e2e/
 │   ├── auth/
-│   │   ├── login.cy.ts       # login flows (UI + API)
-│   │   └── register.cy.ts    # registration flows
-│   └── board/
-│       └── kanban-flow.cy.ts # create items, column display
+│   │   ├── login.cy.ts
+│   │   ├── register.cy.ts
+│   │   └── session.cy.ts
+│   ├── board/
+│   │   └── kanban-flow.cy.ts
+│   ├── items/
+│   ├── navigation/
+│   ├── projects/
+│   └── users/
 ├── component/
 │   └── README.md             # components tested in agentboard-web repo
 ├── support/
-│   ├── commands.ts           # login, loginViaApi, createWorkItem
+│   ├── browser.ts            # setAuthInLocalStorage
+│   ├── commands.ts           # cy.login, cy.createWorkItem (UI only)
+│   ├── environment.ts        # local/staging URL resolution
+│   ├── generators.ts         # generateEmail, generateTenantName
 │   ├── e2e.ts                # e2e support entry (imports commands)
 │   └── component.ts          # component testing support (mount)
 ├── fixtures/
-│   ├── user.json             # test user data
-│   └── work-item.json        # work item fixtures
+│   ├── user.json
+│   └── work-item.json
 └── downloads/
     └── .gitkeep
 ```
