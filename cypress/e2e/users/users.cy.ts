@@ -27,14 +27,14 @@ describe('Users Management', () => {
     });
   });
 
-  it('ADMIN accesses /usuarios and sees members list with email and role', () => {
+  it('ADMIN accesses /usuarios and sees members list with email and role', { tags: '@local' }, () => {
     cy.visit('/usuarios');
     cy.url().should('include', '/usuarios');
     cy.findByText(adminEmail).should('be.visible');
     cy.findByText(/ADMIN/i).should('be.visible');
   });
 
-  it('USER role cannot access /usuarios and sidebar hides the "Usuários" link', () => {
+  it('USER role cannot access /usuarios and sidebar hides the "Usuários" link', { tags: '@local' }, () => {
     const userEmail = generateEmail('member');
 
     testData.createInvite(adminJwt, adminTenantId, userEmail).then((invite) => {
@@ -59,7 +59,7 @@ describe('Users Management', () => {
     cy.url().should('not.include', '/usuarios');
   });
 
-  it('ADMIN creates an invite and email appears in pending invites list', () => {
+  it('ADMIN creates an invite and email appears in pending invites list', { tags: '@local' }, () => {
     const inviteEmail = generateEmail('invited');
 
     cy.visit('/usuarios');
@@ -71,7 +71,7 @@ describe('Users Management', () => {
     cy.findByText(/pendente|pending/i).should('be.visible');
   });
 
-  it('ADMIN cancels an invite and email is removed from pending list', () => {
+  it('ADMIN cancels an invite and email is removed from pending list', { tags: '@local' }, () => {
     const inviteEmail = generateEmail('cancel-invite');
 
     testData.createInvite(adminJwt, adminTenantId, inviteEmail).then((invite) => {
@@ -91,7 +91,7 @@ describe('Users Management', () => {
     });
   });
 
-  it('new user accepts invite, is authenticated in the invite workspace with role USER', () => {
+  it('new user accepts invite, is authenticated in the invite workspace with role USER', { tags: '@local' }, () => {
     const newUserEmail = generateEmail('accept-invite');
 
     testData.createInvite(adminJwt, adminTenantId, newUserEmail).then((invite) => {
@@ -106,7 +106,7 @@ describe('Users Management', () => {
     });
   });
 
-  it('invalid invite token shows error and hides acceptance form', () => {
+  it('invalid invite token shows error and hides acceptance form', { tags: '@local' }, () => {
     cy.visit('/invite/token-invalido-000');
     cy.findByRole('alert').should('be.visible');
     cy.findByRole('button', { name: /aceitar|accept|join/i }).should('not.exist');

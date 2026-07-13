@@ -1,6 +1,8 @@
 import { defineConfig } from 'cypress';
 import * as dotenv from 'dotenv';
 import { resolveEnvironment } from './cypress/support/environment';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const registerGrep = require('@cypress/grep/src/plugin');
 
 dotenv.config();
 
@@ -20,8 +22,12 @@ export default defineConfig({
       environment: env.environment,
       authApiUrl: env.authApiUrl,
       boardApiUrl: env.boardApiUrl,
+      grepTags: process.env.TEST_TAGS ?? '',
+      grepFilterSpecs: true,
+      grepOmitFiltered: true,
     },
     setupNodeEvents(on, config) {
+      registerGrep(config);
       on('task', {
         log(message: string) {
           console.log(message);

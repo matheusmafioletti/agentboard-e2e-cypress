@@ -4,7 +4,7 @@ import { generateEmail, generateTenantName } from '../../support/generators';
 const PASSWORD = 'Abc12345!';
 
 describe('Authentication — Register', () => {
-  it('successful registration redirects to /inicio and shows workspace name in sidebar', () => {
+  it('successful registration redirects to /inicio and shows workspace name in sidebar', { tags: '@local' }, () => {
     const email = generateEmail('register');
     const tenantName = generateTenantName();
 
@@ -19,7 +19,7 @@ describe('Authentication — Register', () => {
     cy.findByText(tenantName).should('be.visible');
   });
 
-  it('duplicate email shows error and user stays on /register', () => {
+  it('duplicate email shows error and user stays on /register', { tags: '@local' }, () => {
     const email = generateEmail('dup');
     const tenantName = generateTenantName();
 

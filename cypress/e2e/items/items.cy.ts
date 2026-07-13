@@ -1,4 +1,5 @@
 import { testData } from '../../api/services/TestDataService';
+import { authenticateStagingUser } from '../../support/staging-auth';
 import { setAuthInLocalStorage } from '../../support/browser';
 import { generateEmail, generateTenantName } from '../../support/generators';
 
@@ -33,16 +34,15 @@ describe('Items List', () => {
     });
   });
 
-  it('/itens shows table with Tipo, Título, and Status columns', () => {
-    testData.createWorkItem(userJwt, userTenantId, projectId, 'Sample Task', 'TASK');
-
+  it('/itens shows table with Tipo, Título, and Status columns', { tags: '@staging' }, () => {
+    authenticateStagingUser();
     cy.visit('/itens');
     cy.findByRole('columnheader', { name: /tipo|type/i }).should('be.visible');
     cy.findByRole('columnheader', { name: /título|title/i }).should('be.visible');
     cy.findByRole('columnheader', { name: /status/i }).should('be.visible');
   });
 
-  it('type filter shows only matching items; clearing filter restores all', () => {
+  it('type filter shows only matching items; clearing filter restores all', { tags: '@local' }, () => {
     testData.createWorkItem(userJwt, userTenantId, projectId, 'Feature Item', 'FEATURE');
     testData.createWorkItem(userJwt, userTenantId, projectId, 'Task Item', 'TASK');
 
@@ -61,7 +61,7 @@ describe('Items List', () => {
     cy.findByText('Task Item').should('be.visible');
   });
 
-  it('clicking an item opens its detail view with the correct ID', () => {
+  it('clicking an item opens its detail view with the correct ID', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Detail Item', 'TASK')
       .then((item) => {
@@ -72,7 +72,7 @@ describe('Items List', () => {
       });
   });
 
-  it('tree view expands Feature to show US children, then US to show Tasks', () => {
+  it('tree view expands Feature to show US children, then US to show Tasks', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Root Feature', 'FEATURE')
       .then((feature) => {

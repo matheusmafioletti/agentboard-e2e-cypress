@@ -1,63 +1,185 @@
 name: E2E Tests — Cypress
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [e2e-app-pr]
   workflow_dispatch:
     inputs:
-      spec:
-        description: 'Spec pattern to run (e.g. cypress/e2e/auth/**)'
+      target_env:
+        description: Target environment
+        type: choice
+        options: [local, staging]
+        default: local
+      image_tag:
+        description: Image tag for local compose (latest or SHA)
         required: false
-        default: 'cypress/e2e/**'
+        default: latest
+
+env:
+  INFRA_REPO: matheusmafioletti/agentboard-infra
+  GHCR_REGISTRY: ghcr.io/matheusmafioletti
 
 jobs:
-  cypress-e2e:
+  resolve-env:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    outputs:
+      target: ${{ steps.resolve.outputs.target }}
+      auth_tag: ${{ steps.resolve.outputs.auth_tag }}
+      board_tag: ${{ steps.resolve.outputs.board_tag }}
+      api_docs_tag: ${{ steps.resolve.outputs.api_docs_tag }}
+      web_tag: ${{ steps.resolve.outputs.web_tag }}
+      run_e2e: ${{ steps.resolve.outputs.run_e2e }}
+    steps:
+      - id: resolve
+        run: |
+          TARGET="local"
+          AUTH_TAG="latest"
+          BOARD_TAG="latest"
+          API_DOCS_TAG="latest"
+          WEB_TAG="e2e-latest"
+          RUN_E2E="true"
 
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TARGET="${{ github.event.inputs.target_env }}"
+            if [[ "$TARGET" == "local" ]]; then
+              TAG="${{ github.event.inputs.image_tag }}"
+              if [[ -n "$TAG" && "$TAG" != "latest" ]]; then
+                AUTH_TAG="$TAG"
+                BOARD_TAG="$TAG"
+                API_DOCS_TAG="$TAG"
+                WEB_TAG="e2e-$TAG"
+              fi
+            fi
+          elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            AUTH_TAG="${{ github.event.client_payload.auth_tag }}"
+            BOARD_TAG="${{ github.event.client_payload.board_tag }}"
+            API_DOCS_TAG="${{ github.event.client_payload.api_docs_tag }}"
+            WEB_TAG="${{ github.event.client_payload.web_tag }}"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            TARGET="staging"
+          fi
+
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          echo "auth_tag=$AUTH_TAG" >> "$GITHUB_OUTPUT"
+          echo "board_tag=$BOARD_TAG" >> "$GITHUB_OUTPUT"
+          echo "api_docs_tag=$API_DOCS_TAG" >> "$GITHUB_OUTPUT"
+          echo "web_tag=$WEB_TAG" >> "$GITHUB_OUTPUT"
+          echo "run_e2e=$RUN_E2E" >> "$GITHUB_OUTPUT"
+
+  lint:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+  e2e-local:
+    needs: [resolve-env, lint]
+    if: needs.resolve-env.outputs.run_e2e == 'true' && needs.resolve-env.outputs.target == 'local'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout infra
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPO }}
+          path: agentboard-infra
+          token: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Type check
-        run: npm run typecheck
+      - name: Start E2E stack
+        working-directory: agentboard-infra
+        env:
+          AUTH_IMAGE_TAG: ${{ needs.resolve-env.outputs.auth_tag }}
+          BOARD_IMAGE_TAG: ${{ needs.resolve-env.outputs.board_tag }}
+          API_DOCS_IMAGE_TAG: ${{ needs.resolve-env.outputs.api_docs_tag }}
+          WEB_IMAGE_TAG: ${{ needs.resolve-env.outputs.web_tag }}
+        run: |
+          cp .env.e2e.example .env.e2e
+          chmod +x scripts/*.sh
+          ./scripts/e2e-up.sh
+          ./scripts/seed-e2e-data.sh
 
-      - name: Run Cypress E2E tests
+      - name: Run @local tests
         uses: cypress-io/github-action@v6
         with:
           browser: chrome
-          spec: ${{ github.event.inputs.spec || 'cypress/e2e/**' }}
+          spec: cypress/e2e/**
         env:
-          ENVIRONMENT: staging
-          BASE_URL: ${{ vars.BASE_URL || 'https://agentboard.matheusmafioletti.com' }}
-          AUTH_API_URL: ${{ vars.AUTH_API_URL || 'https://agentboard.matheusmafioletti.com' }}
-          BOARD_API_URL: ${{ vars.BOARD_API_URL || 'https://agentboard.matheusmafioletti.com' }}
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          ENVIRONMENT: e2e
+          TEST_TAGS: '@local'
+          CYPRESS_grepTags: '@local'
+          CYPRESS_grepFilterSpecs: true
+          CYPRESS_grepOmitFiltered: true
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
+      - name: Tear down E2E stack
+        if: always()
+        working-directory: agentboard-infra
+        run: ./scripts/e2e-down.sh
+
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: cypress-screenshots
           path: cypress/screenshots
           retention-days: 7
 
-      - name: Upload videos
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: cypress-videos
           path: cypress/videos
           retention-days: 7
+
+  e2e-staging:
+    needs: [resolve-env, lint]
+    if: needs.resolve-env.outputs.run_e2e == 'true' && needs.resolve-env.outputs.target == 'staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run @staging tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+          spec: cypress/e2e/**
+        env:
+          ENVIRONMENT: staging
+          TEST_TAGS: '@staging'
+          CYPRESS_grepTags: '@staging'
+          CYPRESS_grepFilterSpecs: true
+          CYPRESS_grepOmitFiltered: true
+          BASE_URL: ${{ vars.BASE_URL || 'https://agentboard.matheusmafioletti.com' }}
+          AUTH_API_URL: ${{ vars.AUTH_API_URL || 'https://agentboard.matheusmafioletti.com' }}
+          BOARD_API_URL: ${{ vars.BOARD_API_URL || 'https://agentboard.matheusmafioletti.com' }}
+          E2E_STAGING_USER_EMAIL: ${{ secrets.E2E_STAGING_USER_EMAIL }}
+          E2E_STAGING_USER_PASSWORD: ${{ secrets.E2E_STAGING_USER_PASSWORD }}

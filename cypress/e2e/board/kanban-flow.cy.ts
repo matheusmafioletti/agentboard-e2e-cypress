@@ -1,4 +1,5 @@
 import { testData } from '../../api/services/TestDataService';
+import { authenticateStagingUser } from '../../support/staging-auth';
 import { setAuthInLocalStorage } from '../../support/browser';
 import { generateEmail, generateTenantName } from '../../support/generators';
 
@@ -33,14 +34,15 @@ describe('Kanban Board Flow', () => {
     });
   });
 
-  it('default board shows TASK columns (New, Active, Closed)', () => {
+  it('default board shows TASK columns (New, Active, Closed)', { tags: '@staging' }, () => {
+    authenticateStagingUser();
     cy.visit('/board?type=TASK');
     cy.findByText('New').should('be.visible');
     cy.findByText('Active').should('be.visible');
     cy.findByText('Closed').should('be.visible');
   });
 
-  it('switching type changes the columns count', () => {
+  it('switching type changes the columns count', { tags: '@local' }, () => {
     cy.visit('/board?type=FEATURE');
     cy.get('[data-testid^="column-"]').should('have.length', 9);
 
@@ -51,7 +53,7 @@ describe('Kanban Board Flow', () => {
     cy.get('[data-testid^="column-"]').should('have.length', 3);
   });
 
-  it('creating a work item via UI places it in the "New" column', () => {
+  it('creating a work item via UI places it in the "New" column', { tags: '@local' }, () => {
     cy.visit('/board?type=TASK');
     cy.findByRole('button', { name: /nova tarefa|novo item|create/i }).click();
     const itemTitle = `Task-${Date.now()}`;
@@ -61,7 +63,7 @@ describe('Kanban Board Flow', () => {
     cy.get('[data-testid="column-new"]').findByText(itemTitle).should('be.visible');
   });
 
-  it('drag-and-drop moves card to target column and persists on reload', () => {
+  it('drag-and-drop moves card to target column and persists on reload', { tags: '@local' }, () => {
     // NOTE: dnd-kit uses pointer events; mouse simulation required
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Drag Me Task', 'TASK')
@@ -91,7 +93,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('parent filter shows only child tasks; clearing filter restores all items', () => {
+  it('parent filter shows only child tasks; clearing filter restores all items', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Parent Feature', 'FEATURE')
       .then((feature) => {
@@ -126,7 +128,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('card shows display ID, type badge, and parent reference', () => {
+  it('card shows display ID, type badge, and parent reference', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Parent Story', 'USER_STORY')
       .then((story) => {
@@ -152,7 +154,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('clicking a Feature card navigates to child USER_STORY board with parent pre-selected', () => {
+  it('clicking a Feature card navigates to child USER_STORY board with parent pre-selected', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Feature To Drill', 'FEATURE')
       .then((feature) => {
@@ -168,7 +170,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('clicking a card opens CardModal with title, type, and status', () => {
+  it('clicking a card opens CardModal with title, type, and status', { tags: '@local' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Modal Test Task', 'TASK')
       .then(() => {

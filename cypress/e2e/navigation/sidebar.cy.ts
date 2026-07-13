@@ -1,29 +1,18 @@
 import { testData } from '../../api/services/TestDataService';
+import { authenticateStagingUser } from '../../support/staging-auth';
 import { setAuthInLocalStorage } from '../../support/browser';
 import { generateEmail, generateTenantName } from '../../support/generators';
 
 const PASSWORD = 'Abc12345!';
 
 describe('Navigation — Sidebar', () => {
-  it('ADMIN sidebar contains "Usuários" link', () => {
-    const email = generateEmail('nav-admin');
-    const tenantName = generateTenantName();
-
-    testData.createAuthenticatedUser(email, PASSWORD, tenantName).then((user) => {
-      setAuthInLocalStorage(user.jwt, {
-        userId: user.userId,
-        email,
-        tenantId: user.tenantId,
-        tenantName,
-        role: 'ADMIN',
-      });
-    });
-
+  it('ADMIN sidebar contains "Usuários" link', { tags: '@staging' }, () => {
+    authenticateStagingUser();
     cy.visit('/inicio');
     cy.get('nav').findByRole('link', { name: /usuários|users/i }).should('be.visible');
   });
 
-  it('USER role sidebar does NOT contain "Usuários" link', () => {
+  it('USER role sidebar does NOT contain "Usuários" link', { tags: '@local' }, () => {
     const adminEmail = generateEmail('nav-admin2');
     const tenantName = generateTenantName();
     const userEmail = generateEmail('nav-user');
@@ -51,7 +40,7 @@ describe('Navigation — Sidebar', () => {
     cy.get('nav').findByText(/usuários|users/i).should('not.exist');
   });
 
-  it('/inicio with at least one project shows summary cards with counts', () => {
+  it('/inicio with at least one project shows summary cards with counts', { tags: '@local' }, () => {
     const email = generateEmail('nav-inicio');
     const tenantName = generateTenantName();
 
