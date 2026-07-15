@@ -42,7 +42,7 @@ describe('Kanban Board Flow', () => {
     cy.findByText('CLOSED').should('be.visible');
   });
 
-  it('switching type changes the columns count', { tags: '@local' }, () => {
+  it('switching type changes the columns count', { tags: '@wip' }, () => {
     cy.visit('/board?type=FEATURE');
     cy.get('[data-testid^="column-"]').should('have.length', 9);
 
@@ -53,7 +53,7 @@ describe('Kanban Board Flow', () => {
     cy.get('[data-testid^="column-"]').should('have.length', 3);
   });
 
-  it('creating a work item via UI places it in the "New" column', { tags: '@local' }, () => {
+  it('creating a work item via UI places it in the "New" column', { tags: '@wip' }, () => {
     cy.visit('/board?type=TASK');
     cy.findByRole('button', { name: /nova tarefa|novo item|create/i }).click();
     const itemTitle = `Task-${Date.now()}`;
@@ -93,7 +93,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('parent filter shows only child tasks; clearing filter restores all items', { tags: '@local' }, () => {
+  it('parent filter shows only child tasks; clearing filter restores all items', { tags: '@wip' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Parent Feature', 'FEATURE')
       .then((feature) => {
@@ -128,7 +128,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('card shows display ID, type badge, and parent reference', { tags: '@local' }, () => {
+  it('card shows display ID, type badge, and parent reference', { tags: '@wip' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Parent Story', 'USER_STORY')
       .then((story) => {
@@ -154,7 +154,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('clicking a Feature card navigates to child USER_STORY board with parent pre-selected', { tags: '@local' }, () => {
+  it('clicking a Feature card navigates to child USER_STORY board with parent pre-selected', { tags: '@wip' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Feature To Drill', 'FEATURE')
       .then((feature) => {
@@ -170,7 +170,7 @@ describe('Kanban Board Flow', () => {
       });
   });
 
-  it('clicking a card opens CardModal with title, type, and status', { tags: '@local' }, () => {
+  it('clicking a card opens CardModal with title, type, and status', { tags: '@wip' }, () => {
     testData
       .createWorkItem(userJwt, userTenantId, projectId, 'Modal Test Task', 'TASK')
       .then(() => {

@@ -46,7 +46,7 @@ describe('Authentication — Login', () => {
 
   it('invalid credentials show generic error message', { tags: '@staging' }, () => {
     cy.visit('/login');
-    cy.findByLabelText(/email/i).type('naoexiste@agentboard.test');
+    cy.findByLabelText(/e-mail|email/i).type('naoexiste@agentboard.test');
     cy.findByLabelText(/senha|password/i).type('WrongPass999!');
     cy.findByRole('button', { name: /entrar|login/i }).click();
     cy.findByRole('alert').should('be.visible');

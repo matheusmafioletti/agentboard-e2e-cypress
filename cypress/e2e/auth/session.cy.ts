@@ -5,7 +5,7 @@ import { generateEmail, generateTenantName } from '../../support/generators';
 const PASSWORD = 'Abc12345!';
 
 describe('Authentication — Session', () => {
-  it('switching workspace via sidebar updates the active workspace name', { tags: '@local' }, () => {
+  it('switching workspace via sidebar updates the active workspace name', { tags: '@wip' }, () => {
     const email = generateEmail('switch');
     const tenantName1 = generateTenantName();
     const tenantName2 = generateTenantName();
