@@ -49,7 +49,7 @@ describe('Authentication — Login', () => {
     cy.findByLabelText(/e-mail|email/i).type('naoexiste@agentboard.test');
     cy.findByLabelText(/senha|password/i).type('WrongPass999!');
     cy.findByRole('button', { name: /entrar|login/i }).click();
-    cy.findByRole('alert').should('be.visible');
+    cy.contains(/e-mail ou senha inválidos/i).should('be.visible');
     cy.url().should('include', '/login');
   });
 
