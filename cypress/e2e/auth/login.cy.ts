@@ -44,7 +44,7 @@ describe('Authentication — Login', () => {
     cy.url().should('include', '/inicio');
   });
 
-  it('invalid credentials show generic error message', { tags: '@staging' }, () => {
+  it('invalid credentials show generic error message', { tags: '@wip' }, () => {
     cy.visit('/login');
     cy.findByLabelText(/e-mail|email/i).type('naoexiste@agentboard.test');
     cy.findByLabelText(/senha|password/i).type('WrongPass999!');

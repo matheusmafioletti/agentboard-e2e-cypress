@@ -9,6 +9,18 @@ dotenv.config();
 const env = resolveEnvironment();
 
 export default defineConfig({
+  reporter: 'cypress-mochawesome-reporter',
+  reporterOptions: {
+    reportDir: 'cypress/reports',
+    charts: true,
+    reportPageTitle: 'AgentBoard Cypress E2E',
+    embeddedScreenshots: true,
+    inlineAssets: true,
+    saveAllAttempts: false,
+    overwrite: false,
+    html: true,
+    json: true,
+  },
   e2e: {
     baseUrl: env.baseUrl,
     specPattern: 'cypress/e2e/**/*.cy.ts',
@@ -27,14 +39,15 @@ export default defineConfig({
       grepOmitFiltered: true,
     },
     setupNodeEvents(on, config) {
-      registerGrep(config);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('cypress-mochawesome-reporter/plugin')(on);
       on('task', {
         log(message: string) {
           console.log(message);
           return null;
         },
       });
-      return config;
+      return registerGrep(config);
     },
   },
   component: {
