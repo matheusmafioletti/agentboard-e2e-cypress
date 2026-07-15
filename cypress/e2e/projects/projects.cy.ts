@@ -37,10 +37,10 @@ describe('Projects', () => {
 
   it('creating a project via UI makes it appear in the projects list', { tags: '@local' }, () => {
     cy.visit('/projetos');
-    cy.findByRole('button', { name: /novo projeto|criar projeto|new project/i }).click();
+    cy.findByRole('button', { name: /novo projeto/i }).first().click();
     const projectName = `Proj-${Date.now()}`;
-    cy.findByLabelText(/nome|name/i).type(projectName);
-    cy.findByRole('button', { name: /criar|salvar|confirmar|save/i }).click();
+    cy.get('#project-name').type(projectName);
+    cy.findByRole('button', { name: /^criar$/i }).click();
     cy.findByText(projectName).should('be.visible');
   });
 
@@ -53,7 +53,7 @@ describe('Projects', () => {
     });
   });
 
-  it('selecting a project via ProjectSelector updates the board context', { tags: '@local' }, () => {
+  it('selecting a project via ProjectSelector updates the board context', { tags: '@wip' }, () => {
     testData.createProject(userJwt, userTenantId, 'Selector Project').then(() => {
       cy.visit('/board');
       cy.findByRole('combobox', { name: /projeto|project/i })

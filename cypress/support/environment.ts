@@ -58,6 +58,16 @@ export function resolveEnvironment(): EnvironmentUrls {
   };
 }
 
+export function resolveRuntimeApiUrl(key: 'authApiUrl' | 'boardApiUrl'): string {
+  if (typeof Cypress !== 'undefined') {
+    const fromCypress = Cypress.env(key);
+    if (typeof fromCypress === 'string' && fromCypress.length > 0) {
+      return fromCypress;
+    }
+  }
+  return resolveEnvironment()[key];
+}
+
 export const env = resolveEnvironment();
 
 export function stagingCredentials(): {

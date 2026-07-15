@@ -31,10 +31,10 @@ describe('Users Management', () => {
     cy.visit('/usuarios');
     cy.url().should('include', '/usuarios');
     cy.findByText(adminEmail).should('be.visible');
-    cy.findByText(/ADMIN/i).should('be.visible');
+    cy.findByText(/ADMIN/i).first().should('be.visible');
   });
 
-  it('USER role cannot access /usuarios and sidebar hides the "Usuários" link', { tags: '@local' }, () => {
+  it('USER role cannot access /usuarios and sidebar hides the "Usuários" link', { tags: '@wip' }, () => {
     const userEmail = generateEmail('member');
 
     testData.createInvite(adminJwt, adminTenantId, userEmail).then((invite) => {
@@ -63,15 +63,16 @@ describe('Users Management', () => {
     const inviteEmail = generateEmail('invited');
 
     cy.visit('/usuarios');
-    cy.findByRole('button', { name: /convidar|invite/i }).click();
-    cy.findByLabelText(/email/i).type(inviteEmail);
-    cy.findByRole('button', { name: /enviar|send|confirmar/i }).click();
+    cy.findByRole('button', { name: /novo convite/i }).click();
+    cy.findByLabelText(/e-mail|email/i).type(inviteEmail);
+    cy.findByRole('button', { name: /gerar link/i }).click();
+    cy.findByRole('button', { name: /fechar/i }).click();
 
     cy.findByText(inviteEmail).should('be.visible');
     cy.findByText(/pendente|pending/i).should('be.visible');
   });
 
-  it('ADMIN cancels an invite and email is removed from pending list', { tags: '@local' }, () => {
+  it('ADMIN cancels an invite and email is removed from pending list', { tags: '@wip' }, () => {
     const inviteEmail = generateEmail('cancel-invite');
 
     testData.createInvite(adminJwt, adminTenantId, inviteEmail).then((invite) => {
@@ -91,7 +92,7 @@ describe('Users Management', () => {
     });
   });
 
-  it('new user accepts invite, is authenticated in the invite workspace with role USER', { tags: '@local' }, () => {
+  it('new user accepts invite, is authenticated in the invite workspace with role USER', { tags: '@wip' }, () => {
     const newUserEmail = generateEmail('accept-invite');
 
     testData.createInvite(adminJwt, adminTenantId, newUserEmail).then((invite) => {

@@ -1,4 +1,4 @@
-import { env } from '../../support/environment';
+import { resolveRuntimeApiUrl } from '../../support/environment';
 import type {
   InviteResult,
   SelectTenantResult,
@@ -20,7 +20,7 @@ function extractLastPathSegment(url: string): string | null {
 
 export class AuthApiClient extends BaseApiClient {
   constructor() {
-    super(env.authApiUrl);
+    super(resolveRuntimeApiUrl('authApiUrl'));
   }
 
   register(

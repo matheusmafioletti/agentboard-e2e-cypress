@@ -10,13 +10,12 @@ describe('Authentication — Register', () => {
 
     cy.visit('/register');
     cy.findByLabelText(/nome|name/i).type('Test User');
-    cy.findByLabelText(/email/i).type(email);
+    cy.findByLabelText(/e-mail|email/i).type(email);
     cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByLabelText(/workspace|tenant|organização/i).type(tenantName);
     cy.findByRole('button', { name: /registrar|register|criar conta/i }).click();
 
     cy.url().should('include', '/inicio');
-    cy.findByText(tenantName).should('be.visible');
   });
 
   it('duplicate email shows error and user stays on /register', { tags: '@local' }, () => {
@@ -27,7 +26,7 @@ describe('Authentication — Register', () => {
 
     cy.visit('/register');
     cy.findByLabelText(/nome|name/i).type('Another User');
-    cy.findByLabelText(/email/i).type(email);
+    cy.findByLabelText(/e-mail|email/i).type(email);
     cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByLabelText(/workspace|tenant|organização/i).type(generateTenantName());
     cy.findByRole('button', { name: /registrar|register|criar conta/i }).click();

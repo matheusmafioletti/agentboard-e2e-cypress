@@ -1,10 +1,10 @@
-import { env } from '../../support/environment';
+import { resolveRuntimeApiUrl } from '../../support/environment';
 import type { ProjectResult, WorkItemResult, WorkItemType } from '../types/board.types';
 import { BaseApiClient } from './BaseApiClient';
 
 export class BoardApiClient extends BaseApiClient {
   constructor() {
-    super(env.boardApiUrl);
+    super(resolveRuntimeApiUrl('boardApiUrl'));
   }
 
   createProject(jwt: string, tenantId: string, name: string): Cypress.Chainable<ProjectResult> {
@@ -27,7 +27,7 @@ export class BoardApiClient extends BaseApiClient {
     type: WorkItemType,
     parentId?: string
   ): Cypress.Chainable<WorkItemResult> {
-    const body: Record<string, string> = { title, type };
+    const body: Record<string, string | number> = { title, type, priority: 1 };
     if (parentId) {
       body['parentId'] = parentId;
     }

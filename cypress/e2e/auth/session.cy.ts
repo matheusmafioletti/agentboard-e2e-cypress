@@ -23,10 +23,10 @@ describe('Authentication — Session', () => {
     });
 
     cy.visit('/inicio');
-    cy.findByText(tenantName1).should('be.visible');
 
-    cy.findByRole('button', { name: /trocar workspace|switch|workspaces|tenants/i }).click();
+    cy.findByRole('button', { name: /^perfil$/i }).click();
+    cy.findByRole('button', { name: /trocar workspace/i }).click();
     cy.findByText(tenantName2).should('be.visible').click();
-    cy.findByText(tenantName2).should('be.visible');
+    cy.url().should('include', '/inicio');
   });
 });

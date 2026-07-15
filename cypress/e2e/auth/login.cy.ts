@@ -10,7 +10,7 @@ describe('Authentication — Login', () => {
     const email = generateEmail('login-single');
     testData.createAuthenticatedUser(email, PASSWORD, generateTenantName());
     cy.visit('/login');
-    cy.findByLabelText(/email/i).type(email);
+    cy.findByLabelText(/e-mail|email/i).type(email);
     cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByRole('button', { name: /entrar|login/i }).click();
     cy.url().should('include', '/inicio');
@@ -26,18 +26,19 @@ describe('Authentication — Login', () => {
     });
 
     cy.visit('/login');
-    cy.findByLabelText(/email/i).type(email);
+    cy.findByLabelText(/e-mail|email/i).type(email);
     cy.findByLabelText(/senha|password/i).type(PASSWORD);
     cy.findByRole('button', { name: /entrar|login/i }).click();
 
     cy.findByText(tenantName).should('be.visible').click();
+    cy.findByRole('button', { name: /continuar/i }).click();
     cy.url().should('include', '/inicio');
   });
 
   it('seed user login redirects directly to /inicio', { tags: '@staging' }, () => {
     const { email, password } = stagingCredentials();
     cy.visit('/login');
-    cy.findByLabelText(/email/i).type(email);
+    cy.findByLabelText(/e-mail|email/i).type(email);
     cy.findByLabelText(/senha|password/i).type(password);
     cy.findByRole('button', { name: /entrar|login/i }).click();
     cy.url().should('include', '/inicio');
@@ -74,7 +75,8 @@ describe('Authentication — Login', () => {
     cy.visit('/inicio');
     cy.url().should('include', '/inicio');
 
-    cy.findByRole('button', { name: /sair|logout/i }).click();
+    cy.findByRole('button', { name: /^perfil$/i }).click();
+    cy.findByRole('button', { name: /^sair$/i }).click();
     cy.url().should('include', '/login');
 
     cy.visit('/inicio');
